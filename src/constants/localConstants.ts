@@ -1,0 +1,57 @@
+export const LOCAL_CONSTANTS = {
+  ACCESS: "accessToken",
+  AMSACCESS: "AMSACCESS",
+  RADIUSBASEACCESS: "RADIUSBASEACCESS",
+  RipRebuildACCESS: "RipRebuildACCESS",
+  ACCOUNTACCESS: "ACCOUNTACCESS",
+  SQEACCESS: "SQEACCESS",
+  REFRESH: "refreshToken",
+  USER: "user",
+  PROFILE:"PROFILE",
+  ONT_ACCESS:"ONT_ACCESS"
+};
+
+export const RESTRICTED_TEMPLATE_KEYS = [
+  "shelf_",
+  "card_",
+  "createdBy",
+  "createdOn",
+  "customerPortArray",
+  "customerPortCount",
+  "customerPortTemplateName",
+  "networkPortArray",
+  "networkPortCount",
+  "networkPortTemplateName",
+  "portTemplate",
+  "templateName",
+  "type",
+  "shelfTemplate",
+  "cardTemplate",
+  "modifiedBy",
+  "modifiedOn",
+  "onlyPort",
+  "modifiedOn",
+  "templateValues",
+  "portTemplateValues",
+  "tableIndex"
+];
+export const RESTRICTED_SHELF_TEMPLATE_KEYS = [
+  "card_",
+  "createdBy",
+  "createdOn",
+  "customerPortArray",
+  "customerPortCount",
+  "customerPortTemplateName",
+  "networkPortArray",
+  "networkPortCount",
+  "networkPortTemplateName",
+  "portTemplate",
+  "templateName",
+  "type",
+  "cardTemplate",
+  "modifiedBy",
+  "modifiedOn",
+  "templateValues",
+  "portTemplateValues",
+  "tableIndex"
+];

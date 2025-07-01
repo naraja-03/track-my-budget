@@ -6,9 +6,10 @@ const options = {};
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
-if (!process.env.MONGODB_URI) {
-  throw new Error("Please add your Mongo URI to .env");
-}
+// Remove the check that throws an error since we have a fallback URI
+// if (!process.env.MONGODB_URI) {
+//   throw new Error("Please add your Mongo URI to .env");
+// }
 
 if (process.env.NODE_ENV === "development") {
   // In dev mode, use a global variable so the value is preserved across module reloads

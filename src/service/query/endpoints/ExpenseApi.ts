@@ -26,6 +26,24 @@ export const expenseApi = createApi({
       query: () => "expenses",
       providesTags: ["Expenses"],
     }),
+    // GET: fetch expenses by month
+    getExpensesByMonth: builder.query<
+      { items: DayExpense[]; target?: number },
+      { monthName: string; yearNum: number }
+    >({
+      query: ({ monthName, yearNum }) => {
+        const monthNames = [
+          "january", "february", "march", "april", "may", "june",
+          "july", "august", "september", "october", "november", "december"
+        ];
+        const monthIdx = monthNames.findIndex(
+          m => m.toLowerCase() === monthName.toLowerCase()
+        );
+        const monthParam = `${yearNum}-${String(monthIdx + 1).padStart(2, "0")}`;
+        return `expenses?month=${monthParam}`;
+      },
+      providesTags: ["Expenses"],
+    }),
     // POST: add expense
     update: builder.mutation<void, { date: string; newItem: ExpenseItem }>({
       query: (body) => ({
@@ -80,6 +98,7 @@ export const expenseApi = createApi({
 
 export const {
   useGetExpensesQuery,
+  useGetExpensesByMonthQuery,
   useUpdateMutation,
   useUpdateTargetMutation,
   useGetCustomExpensesQuery,

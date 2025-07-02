@@ -1,7 +1,7 @@
 // Migration script to add slugs to existing custom expenses
 // This file can be run once to update existing data
 
-import clientPromise from "@/utils/mongodb";
+import clientPromise from "@/lib/mongodb";
 import { createUniqueSlug } from "@/utils/slugUtils";
 
 export async function migrateCustomExpenseSlugs() {

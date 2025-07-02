@@ -1,12 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import clientPromise from "@/utils/mongodb";
+import clientPromise from "@/lib/mongodb";
 import { getServerSession } from "next-auth/next";
-import NextAuth from "./auth/[...nextauth]";
+import { authOptions } from "./auth/[...nextauth]";
 import type { Session } from "next-auth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Check authentication
-  const session = await getServerSession(req, res, NextAuth) as Session | null;
+  const session = await getServerSession(req, res, authOptions) as Session | null;
   
   if (!session || !session.user || !session.user.email) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const userEmail = session.user.email;
   const client = await clientPromise;
-  const db = client.db(); // default DB from URI
+  const db = client.db("track-my-budget");
   const collection = db.collection("expenses");
 
   if (req.method === "GET") {

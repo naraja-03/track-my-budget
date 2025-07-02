@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { 
-  useBulkUpdateExpensesMutation
+  useGranularUpdateCustomExpenseTransactionsMutation
 } from "@/service/query/endpoints/ExpenseApi";
 
 type ExpenseItem = {
+  _id?: string; // Add transaction ID to track individual items
   category: string;
   amount: number;
   note?: string;
@@ -18,28 +19,27 @@ interface Props {
   dayExpense: DayExpense | null;
   isOpen: boolean;
   onClose: () => void;
+  customExpenseId: string;
 }
 
-type EditingItem = ExpenseItem & {
-  originalIndex?: number; // Track original position for updates
-  isNew?: boolean; // Track if this is a new item
-};
-
-export default function DayExpenseModal({ dayExpense, isOpen, onClose }: Props) {
-  const [editingItems, setEditingItems] = useState<EditingItem[]>([]);
+export default function CustomExpenseDayModal({ dayExpense, isOpen, onClose, customExpenseId }: Props) {
+  const [editingItems, setEditingItems] = useState<ExpenseItem[]>([]);
   const [originalItems, setOriginalItems] = useState<ExpenseItem[]>([]);
-  const [bulkUpdateExpenses] = useBulkUpdateExpensesMutation();
+  const [granularUpdateTransactions] = useGranularUpdateCustomExpenseTransactionsMutation();
 
   // Initialize editing items when modal opens
   useEffect(() => {
     if (dayExpense) {
-      const itemsWithIndex: EditingItem[] = dayExpense.items.map((item, index) => ({
-        ...item,
-        originalIndex: index,
-        isNew: false
-      }));
-      setEditingItems(itemsWithIndex);
-      setOriginalItems([...dayExpense.items]);
+      console.log('Modal opened with dayExpense:', dayExpense);
+      console.log('Items with IDs:', dayExpense.items.map(item => ({ 
+        category: item.category, 
+        amount: item.amount, 
+        id: item._id 
+      })));
+      
+      const items = [...dayExpense.items];
+      setEditingItems(items);
+      setOriginalItems(items); // Keep track of original state
     }
   }, [dayExpense]);
 
@@ -57,40 +57,101 @@ export default function DayExpenseModal({ dayExpense, isOpen, onClose }: Props) 
   };
 
   const handleAddItem = () => {
-    setEditingItems([...editingItems, { 
-      category: "", 
-      amount: 0, 
-      note: "",
-      isNew: true
-    }]);
+    setEditingItems([...editingItems, { category: "", amount: 0, note: "" }]);
   };
 
   const handleSave = async () => {
     try {
       console.log('Starting granular save process...');
-      
-      // Filter out empty items
-      const validItems = editingItems.filter(item => 
+      console.log('Original items:', originalItems);
+      console.log('Current editing items:', editingItems);
+
+      // Filter out empty items from current editing
+      const validEditingItems = editingItems.filter(item => 
         item.category.trim() && item.amount > 0
       );
 
-      console.log('Valid items:', validItems);
-      console.log('Original items:', originalItems);
+      console.log('Valid editing items:', validEditingItems);
 
-      // Detect changes using bulk update approach for simplicity and reliability
-      // This is more efficient than tracking individual operations
-      const finalItems = validItems.map(item => ({
-        category: item.category,
-        amount: item.amount,
-        note: item.note || ""
-      }));
+      // Collect all operations
+      const operations: Array<{
+        type: 'add' | 'update' | 'delete';
+        id?: string;
+        transaction?: {
+          category: string;
+          amount: number;
+          note?: string;
+          date: string;
+        };
+      }> = [];
 
-      await bulkUpdateExpenses({
-        date: dayExpense.date,
-        items: finalItems
+      // 1. Handle deletions: items that exist in original but not in current valid items
+      const itemsToDelete = originalItems.filter(originalItem => 
+        originalItem._id && !validEditingItems.find(editItem => editItem._id === originalItem._id)
+      );
+
+      console.log('Items to delete:', itemsToDelete);
+      itemsToDelete.forEach(item => {
+        operations.push({
+          type: 'delete',
+          id: item._id!
+        });
+      });
+
+      // 2. Handle updates: items that exist in both original and current, but have changes
+      const itemsToUpdate = validEditingItems.filter(editItem => {
+        if (!editItem._id) return false; // Skip new items
+        const originalItem = originalItems.find(orig => orig._id === editItem._id);
+        if (!originalItem) return false; // Skip if not found in original
+        
+        // Check if anything changed
+        return (
+          originalItem.category !== editItem.category ||
+          originalItem.amount !== editItem.amount ||
+          originalItem.note !== editItem.note
+        );
+      });
+
+      console.log('Items to update:', itemsToUpdate);
+      itemsToUpdate.forEach(item => {
+        operations.push({
+          type: 'update',
+          id: item._id!,
+          transaction: {
+            category: item.category,
+            amount: item.amount,
+            note: item.note || "",
+            date: dayExpense.date,
+          }
+        });
+      });
+
+      // 3. Handle additions: items that don't have _id (new items)
+      const itemsToAdd = validEditingItems.filter(editItem => !editItem._id);
+
+      console.log('Items to add:', itemsToAdd);
+      itemsToAdd.forEach(item => {
+        operations.push({
+          type: 'add',
+          transaction: {
+            category: item.category,
+            amount: item.amount,
+            note: item.note || "",
+            date: dayExpense.date,
+          }
+        });
+      });
+
+      console.log(`Generated ${operations.length} operations:`, operations);
+
+      // Send all operations in a single call
+      const result = await granularUpdateTransactions({
+        customExpenseId,
+        operations
       }).unwrap();
 
-      console.log('Bulk update completed successfully');
+      console.log('Granular save completed successfully:', result);
+      console.log(`Operations processed: ${result.processed.deleted} deleted, ${result.processed.updated} updated, ${result.processed.added} added`);
 
       // Success feedback
       if ('vibrate' in navigator) {
@@ -99,7 +160,7 @@ export default function DayExpenseModal({ dayExpense, isOpen, onClose }: Props) 
 
       onClose();
     } catch (error) {
-      console.error('Failed to update expenses:', error);
+      console.error('Failed to update custom expense transactions:', error);
       
       if ('vibrate' in navigator) {
         navigator.vibrate(200);
@@ -108,15 +169,8 @@ export default function DayExpenseModal({ dayExpense, isOpen, onClose }: Props) 
   };
 
   const handleClose = () => {
-    if (dayExpense) {
-      const itemsWithIndex: EditingItem[] = dayExpense.items.map((item, index) => ({
-        ...item,
-        originalIndex: index,
-        isNew: false
-      }));
-      setEditingItems(itemsWithIndex);
-      setOriginalItems([...dayExpense.items]);
-    }
+    setEditingItems([...dayExpense.items]);
+    setOriginalItems([...dayExpense.items]);
     onClose();
   };
 

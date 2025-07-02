@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { PlusIcon, CurrencyRupeeIcon, TrashIcon } from "@heroicons/react/24/solid";
+import { PlusIcon, CurrencyRupeeIcon, TrashIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/solid";
 import { AddCustomProjectModal } from "@/components/AddCustomProjectModal";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { useSession, signOut } from "next-auth/react";
 import toast from "react-hot-toast";
 import {
     useGetCustomExpensesQuery,
@@ -15,10 +16,12 @@ type CustomExpense = {
     title: string;
     description?: string;
     target?: number;
+    slug?: string;
 };
 
 export default function DashboardPage() {
     const router = useRouter();
+    const { data: session, status } = useSession();
     const [plusModalOpen, setPlusModalOpen] = useState(false);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -26,10 +29,40 @@ export default function DashboardPage() {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
+    // Hooks must be called before any early returns
     const { data, refetch } = useGetCustomExpensesQuery();
     const customExpenses: CustomExpense[] = data?.items || [];
     const [addCustomExpense] = useAddCustomExpenseMutation();
     const [deleteCustomExpense] = useDeleteCustomExpenseMutation();
+
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (status === "loading") return; // Still loading
+        if (!session) {
+            router.push("/auth/signin");
+        }
+    }, [session, status, router]);
+
+    // Show loading while checking authentication
+    if (status === "loading") {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Show nothing if not authenticated (will redirect)
+    if (!session) {
+        return null;
+    }
+
+    const handleLogout = async () => {
+        await signOut({ callbackUrl: "/auth/signin" });
+    };
 
     const handleAddCustomProject = async (project: { name: string; target: number; notes: string }) => {
         try {
@@ -67,6 +100,32 @@ export default function DashboardPage() {
 
     return (
         <main className="min-h-screen bg-gray-100 pt-10 pb-24 px-4 flex flex-col items-center">
+            {/* User Header */}
+            <div className="w-full max-w-md mb-6">
+                <div className="flex items-center justify-between bg-white rounded-2xl shadow-sm p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                            {session?.user?.name?.charAt(0) || session?.user?.email?.charAt(0) || "U"}
+                        </div>
+                        <div>
+                            <div className="font-medium text-gray-900">
+                                {session?.user?.name || "User"}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                                {session?.user?.email}
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleLogout}
+                        className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                        title="Sign out"
+                    >
+                        <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+
             <h1 className="text-2xl font-semibold mb-8 text-center">Finance Dashboard</h1>
             <div className="flex flex-col gap-5 w-full max-w-md">
                 {/* Monthly Expense Card */}
@@ -87,7 +146,7 @@ export default function DashboardPage() {
                     <div
                         key={exp._id}
                         className="bg-white rounded-2xl shadow-md p-6 flex flex-row items-center cursor-pointer hover:shadow-lg transition group relative"
-                        onClick={() => router.push(`/customExpense/${exp._id}`)}
+                        onClick={() => router.push(`/customExpense/${exp.slug || exp._id}`)}
                         onMouseEnter={() => setHoveredId(exp._id)}
                         onMouseLeave={() => setHoveredId(null)}
                     >

@@ -30,44 +30,64 @@ export default function ExpenseDaysList({ days, loading, onDayClick }: Props) {
       </div>
     );
   }
+
+  // Format date to show day and date like "Tue 01-07"
+  const formatDateHeader = (dateString: string) => {
+    const date = new Date(dateString);
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+    const dayMonth = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+    return `${dayName} ${dayMonth}`;
+  };
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 lg:gap-3 mt-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 lg:gap-4 mt-6">
       {days.map((day) => (
         <div 
           key={day.date} 
           id={day.date} 
-          className="bg-white rounded-lg shadow-sm hover:shadow-md border border-gray-200 p-3 cursor-pointer hover:bg-gray-50 transition-all duration-200 group"
+          className={`bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 p-4 transition-all duration-200 group ${
+            onDayClick ? 'cursor-pointer hover:bg-gray-50' : ''
+          }`}
           onClick={() => onDayClick?.(day)}
-          title="Click to edit expenses for this day"
+          title={onDayClick ? "Click to edit expenses for this day" : ""}
         >
-          <div className="flex justify-between items-center mb-2">
-            <div className="font-medium text-sm group-hover:text-blue-600 transition-colors">
-              {day.date}
+          {/* Header with date and edit text */}
+          <div className="flex justify-between items-center mb-3">
+            <div className="font-medium text-base text-gray-900 group-hover:text-blue-600 transition-colors">
+              {formatDateHeader(day.date)}
             </div>
-            <span className="text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-              ✏️
-            </span>
+            {onDayClick && (
+              <div className="text-sm text-gray-400 group-hover:text-blue-500 transition-colors">
+                Edit
+              </div>
+            )}
           </div>
-          <ul className="space-y-1 max-h-20 overflow-y-auto">
-            {day.items.slice(0, 3).map((item, idx) => (
-              <li key={idx} className="flex justify-between py-0.5 text-xs border-b last:border-b-0 border-gray-100">
-                <span className="truncate pr-2">
+
+          {/* Expense items */}
+          <ul className="space-y-2 mb-3">
+            {day.items.slice(0, 4).map((item, idx) => (
+              <li key={idx} className="flex justify-between py-1 text-sm">
+                <span className="truncate pr-2 text-gray-600">
                   {item.category}
                 </span>
-                <span className="font-medium text-blue-600 font-mono whitespace-nowrap">₹{item.amount}</span>
+                <span className="font-medium text-gray-900 font-mono whitespace-nowrap">
+                  ₹{item.amount.toLocaleString()}
+                </span>
               </li>
             ))}
-            {day.items.length > 3 && (
-              <li className="text-xs text-gray-400 text-center py-0.5">
-                +{day.items.length - 3} more
+            {day.items.length > 4 && (
+              <li className="text-xs text-gray-400 text-center py-1">
+                +{day.items.length - 4} more items
               </li>
             )}
           </ul>
-          <div className="mt-2 pt-2 border-t border-gray-100">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-gray-500">Total</span>
-              <span className="font-semibold text-blue-700 font-mono">
-                ₹{day.items.reduce((sum, item) => sum + item.amount, 0)}
+
+          {/* Total section */}
+          <div className="pt-3 border-t border-gray-100">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-500 font-medium">Total</span>
+              <span className="font-semibold text-lg text-gray-900 font-mono">
+                ₹{day.items.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}
               </span>
             </div>
           </div>

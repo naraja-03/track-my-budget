@@ -19,9 +19,54 @@ export default function ExpenseFooter({ total, target, onAddExpense, month }: Pr
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const dragStartTime = useRef<number>(0);
   const [updateTarget] = useUpdateTargetMutation();
+  const lastClickTime = useRef<number>(0);
+  const clickCount = useRef<number>(0);
 
   const pl = (target ?? 0) - total;
   const plColor = pl > 0 ? "text-green-600" : pl < 0 ? "text-red-600" : "text-gray-600";
+
+  // Handle double-click for PC users to navigate to dashboard
+  const handleDoubleClick = () => {
+    // Add a smooth transition before navigation
+    const footerElement = document.querySelector('.expense-footer') as HTMLElement;
+    if (footerElement) {
+      footerElement.style.transform = 'translateY(-100vh)';
+      footerElement.style.opacity = '0';
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 200); // Wait for animation to complete
+    } else {
+      router.push('/dashboard');
+    }
+  };
+
+  // Handle click detection for double-click functionality
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    const now = Date.now();
+    const timeDiff = now - lastClickTime.current;
+    
+    if (timeDiff < 300) { // Double-click detected within 300ms
+      clickCount.current++;
+      if (clickCount.current === 2) {
+        handleDoubleClick();
+        clickCount.current = 0;
+        return;
+      }
+    } else {
+      clickCount.current = 1;
+    }
+    
+    lastClickTime.current = now;
+    
+    // Reset click count after timeout to prevent confusion
+    setTimeout(() => {
+      if (clickCount.current === 1) {
+        clickCount.current = 0;
+      }
+    }, 350);
+  };
 
   const handleStart = (clientY: number) => {
     setStartY(clientY);
@@ -76,23 +121,14 @@ export default function ExpenseFooter({ total, target, onAddExpense, month }: Pr
     setCurrentY(0);
   };
 
-  // Mouse events
+  // Mouse events - Use click detection instead of drag for PC
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    handleStart(e.clientY);
+    // Don't start drag on mouse, use click detection instead
+    handleClick(e);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    e.preventDefault();
-    handleMove(e.clientY);
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    e.preventDefault();
-    handleEnd();
-  };
-
-  // Touch events
+  // Touch events - Keep drag functionality for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     handleStart(e.touches[0].clientY);
   };
@@ -228,13 +264,12 @@ export default function ExpenseFooter({ total, target, onAddExpense, month }: Pr
               : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           }}
           onMouseDown={handleMouseDown}
-          onMouseMove={isDragging ? handleMouseMove : undefined}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onDoubleClick={handleDoubleClick}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchEnd}
+          title="Double-click to go to Dashboard (PC) | Long press and swipe up (Mobile)"
         >
           <div className="grid grid-cols-3 gap-3 sm:gap-4 w-full max-w-xs">
             <div className="text-xs sm:text-sm text-center">
@@ -268,24 +303,37 @@ export default function ExpenseFooter({ total, target, onAddExpense, month }: Pr
         </div>
       </div>
 
-      {/* Target Edit Modal - Compact */}
+      {/* Target Edit Modal - Professional */}
       {showTargetModal && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/20 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-6"
           onClick={handleModalClose}
         >
           <div 
-            className="bg-white rounded-xl shadow-xl w-full max-w-xs mx-4 animate-in zoom-in-95 duration-150"
+            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
+            style={{
+              marginTop: "15vh",
+            }}
           >
-            <div className="p-4">
-              <h3 className="text-base font-medium text-gray-900 mb-3 text-center">
-                Edit Target
-              </h3>
+
+
+            <div className="px-4 pt-4 pb-4 sm:px-8 sm:pt-8 sm:pb-6">
+              <div className="text-center mb-6 sm:mb-8">
+                <h3 className="text-lg sm:text-2xl font-semibold sm:font-light text-gray-900 mb-1 sm:mb-2">
+                  Edit Target
+                </h3>
+                <p className="text-sm sm:text-base text-gray-500 font-light">
+                  Set your monthly spending goal
+                </p>
+              </div>
               
-              <div className="mb-4">
+              <div className="mb-6 sm:mb-8">
+                <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">
+                  Target Amount
+                </label>
                 <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₹</span>
+                  <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500 text-base sm:text-lg font-medium">₹</span>
                   <input
                     type="number"
                     value={targetValue}
@@ -294,33 +342,34 @@ export default function ExpenseFooter({ total, target, onAddExpense, month }: Pr
                       if (e.key === 'Enter') handleTargetSave();
                       if (e.key === 'Escape') handleModalClose();
                     }}
-                    className="w-full pl-7 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-mono text-base hover:border-gray-400 transition-colors"
+                    className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-3 sm:py-4 text-base sm:text-lg border border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-mono transition-all hover:border-gray-300"
                     placeholder="0"
                     autoFocus
                   />
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={handleTargetDelete}
-                  className="px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 active:scale-95 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-red-300"
-                  title="Delete target"
-                >
-                  ×
-                </button>
-                <button
-                  onClick={handleModalClose}
-                  className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 active:scale-95 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                >
-                  Cancel
-                </button>
+              <div className="space-y-3">
                 <button
                   onClick={handleTargetSave}
-                  className="flex-1 px-3 py-2 bg-indigo-500 text-white rounded-lg text-sm font-medium hover:bg-indigo-600 active:scale-95 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-blue-600 text-white rounded-lg sm:rounded-xl text-base font-medium hover:bg-blue-700 transition-all shadow-sm"
                 >
-                  Save
+                  Save Target
                 </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleModalClose}
+                    className="flex-1 px-4 sm:px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-lg sm:rounded-xl text-base font-medium hover:bg-gray-50 hover:border-gray-300 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleTargetDelete}
+                    className="flex-1 px-4 sm:px-6 py-3 bg-white border border-red-200 text-red-600 rounded-lg sm:rounded-xl text-base font-medium hover:bg-red-50 hover:border-red-300 transition-all"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             </div>
           </div>

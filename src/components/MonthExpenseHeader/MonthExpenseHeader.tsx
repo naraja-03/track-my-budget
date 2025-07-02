@@ -8,7 +8,28 @@ interface Props {
     onChangeMonth: (delta: number) => void;
 }
 
+// Month names for display
+const monthNames = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
 export default function MonthExpenseHeader({ month, onChangeMonth, year }: Props) {
+    // Format month display - if it's in YYYY-MM format, convert to month name
+    const getDisplayMonth = (monthParam: string) => {
+        // Check if it's in YYYY-MM format (like "2025-01")
+        if (monthParam.includes("-") && monthParam.length === 7) {
+            const [, monthNum] = monthParam.split("-");
+            const monthIndex = parseInt(monthNum, 10) - 1;
+            return monthNames[monthIndex] || monthParam;
+        }
+        
+        // If it's already a month name, capitalize it properly
+        const monthName = monthNames.find(m => m.toLowerCase() === monthParam.toLowerCase());
+        return monthName || monthParam;
+    };
+
+    const displayMonth = getDisplayMonth(month);
 
     return (
         <div className="flex flex-col items-center py-6 relative">
@@ -20,8 +41,8 @@ export default function MonthExpenseHeader({ month, onChangeMonth, year }: Props
                 >
                     <ChevronLeftIcon className="h-6 w-6" />
                 </button>
-                <span className="flex-1 text-2xl text-center min-w-[140px]">
-                    {month}
+                <span className="flex-1 text-2xl text-center min-w-[140px] font-medium">
+                    {displayMonth}
                 </span>
                 <button
                     aria-label="Next month"

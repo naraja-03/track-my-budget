@@ -85,9 +85,9 @@ button:active, [role="button"]:active, .cursor-pointer:active {
     transition: background-color 0.2s ease;
   }
   
-  .expense-footer > div:active {
+  /* .expense-footer > div:active {
     background-color: rgba(0, 0, 0, 0.05);
-  }
+  } */
   
   /* Modal optimizations for mobile */
   .modal-container {
@@ -154,4 +154,60 @@ button:active, [role="button"]:active, .cursor-pointer:active {
 
 .mobile-modal {
   animation: slideInFromBottom 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Custom scrollbar styles for modern browsers */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background-color: rgb(209 213 219);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  
+  .hover\:scrollbar-thumb-gray-400:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(156 163 175);
+  }
+  
+  /* Webkit scrollbar styling */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(209 213 219);
+    border-radius: 4px;
+    border: none;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(156 163 175);
+  }
+  
+  /* Hide scrollbar for Firefox */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(209 213 219) transparent;
+  }
+  
+  /* Hide scrollbar completely */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

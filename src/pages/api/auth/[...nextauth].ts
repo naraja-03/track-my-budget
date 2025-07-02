@@ -1,7 +1,7 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 // import { MongoDBAdapter } from "@auth/mongodb-adapter"; // Temporarily disabled
-import clientPromise from "@/lib/mongodb";
+// import clientPromise from "@/lib/mongodb"; // Temporarily disabled
 
 // Extend the Session and User types to include user details
 declare module "next-auth" {
@@ -30,63 +30,25 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === "development",
   callbacks: {
     async signIn({ user, account }) {
+      // For now, allow all Google sign-ins
       if (account?.provider === 'google' && user.email) {
-        try {
-          const client = await clientPromise;
-          const db = client.db('track-my-budget');
-          
-          // Check if user already exists
-          const existingUser = await db.collection('users').findOne({ email: user.email });
-          
-          if (!existingUser) {
-            // Create new user with appropriate role and status
-            const isAdmin = ADMIN_EMAILS.includes(user.email);
-            const newUser = {
-              email: user.email,
-              name: user.name,
-              image: user.image,
-              role: isAdmin ? 'admin' : 'user',
-              status: isAdmin ? 'active' : 'pending',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
-            
-            await db.collection('users').insertOne(newUser);
-          }
-          
-          return true;
-        } catch (error) {
-          console.error('Error in signIn callback:', error);
-          return false;
-        }
+        console.log('Google sign-in successful for:', user.email);
+        return true;
       }
       return true;
     },
-    async session({ session, token, user }) {
-      // Use token instead of user for better compatibility
-      if (session.user?.email) {
-        try {
-          const client = await clientPromise;
-          const db = client.db('track-my-budget');
-          
-          const userData = await db.collection('users').findOne({ email: session.user.email });
-          
-          if (userData) {
-            session.user.id = user?.id || token?.sub || userData._id?.toString() || '';
-            session.user.role = userData.role;
-            session.user.status = userData.status;
-          } else {
-            // Fallback for users not in our custom users collection
-            session.user.id = user?.id || token?.sub || '';
-            session.user.role = ADMIN_EMAILS.includes(session.user.email) ? 'admin' : 'user';
-            session.user.status = ADMIN_EMAILS.includes(session.user.email) ? 'active' : 'pending';
-          }
-        } catch (error) {
-          console.error('Error in session callback:', error);
-          // Fallback to basic session data
-          session.user.id = user?.id || token?.sub || '';
-          session.user.role = ADMIN_EMAILS.includes(session.user.email || '') ? 'admin' : 'user';
-          session.user.status = ADMIN_EMAILS.includes(session.user.email || '') ? 'active' : 'pending';
+    async session({ session, token }) {
+      // Use token data for JWT strategy
+      if (session.user && token) {
+        session.user.id = (token.sub as string) || (token.id as string) || 'unknown';
+        session.user.email = (token.email as string) || session.user.email;
+        session.user.name = (token.name as string) || session.user.name;
+        session.user.image = (token.picture as string) || session.user.image;
+        
+        // Set role and status based on email
+        if (session.user.email) {
+          session.user.role = ADMIN_EMAILS.includes(session.user.email) ? 'admin' : 'user';
+          session.user.status = ADMIN_EMAILS.includes(session.user.email) ? 'active' : 'active'; // Make all users active for now
         }
       }
       return session;

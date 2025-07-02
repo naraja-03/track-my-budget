@@ -5,15 +5,29 @@ import { authOptions } from "./auth/[...nextauth]";
 import type { Session } from "next-auth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Check authentication
-  const session = await getServerSession(req, res, authOptions) as Session | null;
+  let session: Session | null = null;
   
-  console.log("Session in expenses API:", session);
-  console.log("User email:", session?.user?.email);
-  
-  if (!session || !session.user || !session.user.email) {
-    console.log("Authentication failed - returning 401");
-    return res.status(401).json({ error: "Unauthorized" });
+  try {
+    // Check authentication
+    session = await getServerSession(req, res, authOptions) as Session | null;
+    
+    console.log("=== EXPENSES API DEBUG ===");
+    console.log("Session exists:", !!session);
+    console.log("Session user:", session?.user);
+    console.log("User email:", session?.user?.email);
+    console.log("Request method:", req.method);
+    console.log("Request headers cookies:", req.headers.cookie ? "Present" : "Missing");
+    
+    if (!session || !session.user || !session.user.email) {
+      console.log("Authentication failed - returning 401");
+      return res.status(401).json({ error: "Unauthorized", debug: "No session or user email" });
+    }
+  } catch (error) {
+    console.error("Error getting session:", error);
+    return res.status(500).json({ 
+      error: "Session error", 
+      debug: error instanceof Error ? error.message : "Unknown error" 
+    });
   }
 
   const userEmail = session.user.email;

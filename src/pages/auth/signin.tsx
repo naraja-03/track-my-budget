@@ -2,6 +2,7 @@ import { GetServerSideProps } from "next";
 import { getProviders, signIn, getSession } from "next-auth/react";
 import { useState } from "react";
 import { SEOHead } from "@/components/SEOHead";
+import Link from "next/link";
 
 interface Provider {
   id: string;
@@ -124,9 +125,9 @@ export default function SignIn({ providers }: Props) {
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-500">
               By signing in, you agree to our{' '}
-              <a href="/terms" className="text-blue-600 hover:underline">terms of service</a>
+              <Link href="/terms" className="text-blue-600 hover:underline">terms of service</Link>
               {' '}and{' '}
-              <a href="/privacy" className="text-blue-600 hover:underline">privacy policy</a>
+              <Link href="/privacy" className="text-blue-600 hover:underline">privacy policy</Link>
             </p>
             <p className="text-xs text-gray-400 mt-2">
               Access is restricted to approved users only

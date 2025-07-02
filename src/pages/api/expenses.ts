@@ -8,7 +8,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Check authentication
   const session = await getServerSession(req, res, authOptions) as Session | null;
   
+  console.log("Session in expenses API:", session);
+  console.log("User email:", session?.user?.email);
+  
   if (!session || !session.user || !session.user.email) {
+    console.log("Authentication failed - returning 401");
     return res.status(401).json({ error: "Unauthorized" });
   }
 

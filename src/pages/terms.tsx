@@ -29,7 +29,7 @@ export default function TermsOfService() {
               <section className="mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">1. Acceptance of Terms</h2>
                 <p className="text-gray-700 mb-4">
-                  By accessing and using Track My Budget ("the Service"), you accept and agree to be bound by the terms and provision of this agreement.
+                  By accessing and using Track My Budget (&#39;the Service&#39;), you accept and agree to be bound by the terms and provision of this agreement.
                 </p>
               </section>
 
@@ -60,7 +60,7 @@ export default function TermsOfService() {
               <section className="mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">5. Limitation of Liability</h2>
                 <p className="text-gray-700 mb-4">
-                  Track My Budget is provided "as is" without any warranties. We are not liable for any financial decisions made based on information provided by the application.
+                  Track My Budget is provided &#39;as is&#39; without any warranties. We are not liable for any financial decisions made based on information provided by the application.
                 </p>
               </section>
 
